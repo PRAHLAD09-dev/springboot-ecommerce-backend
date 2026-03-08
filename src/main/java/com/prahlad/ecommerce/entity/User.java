@@ -7,6 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.prahlad.ecommerce.enums.Role;
 
 import jakarta.persistence.CascadeType;
@@ -52,11 +53,13 @@ public class User implements UserDetails
     private boolean active = true;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonManagedReference
     private List<Address> addresses;
 
 	
 	@Override
-	public Collection<? extends GrantedAuthority> getAuthorities() {
+	public Collection<? extends GrantedAuthority> getAuthorities() 
+	{
 	    return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
 	}
 

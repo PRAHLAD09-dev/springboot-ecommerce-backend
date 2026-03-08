@@ -1,5 +1,7 @@
 package com.prahlad.ecommerce.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -25,12 +27,22 @@ public class Address
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String fullName;
+
+    private String phoneNumber;
+
     private String street;
+
     private String city;
+
     private String state;
+
     private String zipCode;
+
+    private String country;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
+    @JsonBackReference
     private User user;
 }
