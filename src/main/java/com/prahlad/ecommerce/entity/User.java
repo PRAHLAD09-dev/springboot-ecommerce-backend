@@ -7,6 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.prahlad.ecommerce.enums.Role;
 
@@ -47,6 +48,7 @@ public class User implements UserDetails
 
     private String password;
 
+    
     @Enumerated(EnumType.STRING)
     private Role role;
 
@@ -55,6 +57,11 @@ public class User implements UserDetails
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @JsonManagedReference
     private List<Address> addresses;
+    
+    
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @JsonIgnore
+    private List<Order> orders;
 
 	
 	@Override

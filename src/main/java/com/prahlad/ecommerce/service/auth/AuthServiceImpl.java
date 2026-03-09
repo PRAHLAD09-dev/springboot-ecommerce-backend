@@ -2,10 +2,8 @@ package com.prahlad.ecommerce.service.auth;
 
 import java.util.Optional;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 import com.prahlad.ecommerce.dto.auth.AuthResponse;
 import com.prahlad.ecommerce.dto.auth.LoginRequest;
@@ -79,7 +77,8 @@ public class AuthServiceImpl implements AuthService
         merchantRepository.save(merchant);
 
         return new AuthResponse(
-                "Merchant registered successfully",
+                "Merchant registered successfully."
+                + "Awaiting admin approval.",
                 merchant.getEmail(),
                 merchant.getRole().name(),
                 null
@@ -127,7 +126,12 @@ public class AuthServiceImpl implements AuthService
 
             if (!merchant.isApproved()) 
             {
-            	throw new ResponseStatusException( HttpStatus.FORBIDDEN, "Merchant not approved yet");
+                return new AuthResponse(
+                    "Merchant not approved yet",
+                    merchant.getEmail(),
+                    merchant.getRole().name(),
+                    null
+                );
             }
 
             String token = jwtUtil.generateToken(merchant);

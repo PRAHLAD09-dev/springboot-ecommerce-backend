@@ -23,7 +23,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/merchant")
+@RequestMapping("/api/merchant/product")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('MERCHANT')")
 public class MerchantProductController 
