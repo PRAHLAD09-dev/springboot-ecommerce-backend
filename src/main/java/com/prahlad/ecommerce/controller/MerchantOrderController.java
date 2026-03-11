@@ -18,13 +18,13 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/merchant/orders")
 @RequiredArgsConstructor
-//@PreAuthorize("hasRole('MERCHANT')")
+@PreAuthorize("hasRole('MERCHANT')")
 public class MerchantOrderController 
 {
 	private final OrderService orderService;
 
 	@PutMapping("/{orderId}/status")
-	public Order updateStatus(@PathVariable Long orderId, @RequestParam OrderStatus status,
+	public Order updateStatus(@PathVariable Long orderId, @RequestParam OrderStatus status, 
 			Authentication authentication) 
 	{
 

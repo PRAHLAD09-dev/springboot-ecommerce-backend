@@ -19,102 +19,123 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService 
 {
+	private final CartRepository cartRepository;
+	private final CartItemRepository cartItemRepository;
+	private final ProductRepository productRepository;
+	private final UserRepository userRepository;
 
-    private final CartRepository cartRepository;
-    private final CartItemRepository cartItemRepository;
-    private final ProductRepository productRepository;
-    private final UserRepository userRepository;
+	@Override
+	public Cart addToCart(Long productId, int quantity, String userEmail) 
+	{
 
-    @Override
-    public Cart addToCart(Long productId, int quantity, String userEmail) 
-    {
+		User user = userRepository.findByEmail(userEmail).orElseThrow(() -> new RuntimeException("User not found"));
 
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+		Cart cart = cartRepository.findByUser(user).orElseGet(() -> 
+		{
+			Cart newCart = new Cart();
+			newCart.setUser(user);
+			return cartRepository.save(newCart);
+		});
 
-        Cart cart = cartRepository.findByUser(user)
-                .orElseGet(() -> {
-                    Cart newCart = new Cart();
-                    newCart.setUser(user);
-                    return cartRepository.save(newCart);
-                });
+		Product product = productRepository.findById(productId)
+				.orElseThrow(() -> new RuntimeException("Product not found"));
 
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+		if (!product.isActive()) 
+		{
+			throw new RuntimeException("Product not available");
+		}
 
-        if(!product.isActive()){
-            throw new RuntimeException("Product not available");
-        }
+		if (product.getStock() < quantity) 
+		{
+			throw new RuntimeException("Insufficient stock");
+		}
 
-        if(product.getStock() < quantity){
-            throw new RuntimeException("Insufficient stock");
-        }
+		Optional<CartItem> existingItem = cart.getItems().stream().filter(i -> i.getProduct().getId().equals(productId))
+				.findFirst();
 
-        Optional<CartItem> existingItem = cart.getItems()
-                .stream()
-                .filter(i -> i.getProduct().getId().equals(productId))
-                .findFirst();
+		if (existingItem.isPresent()) 
+		{
 
-        if(existingItem.isPresent()) 
-        {
+			CartItem item = existingItem.get();
+			int newQty = item.getQuantity() + quantity;
 
-            CartItem item = existingItem.get();
-            item.setQuantity(item.getQuantity() + quantity);
+			if (product.getStock() < newQty) 
+			{
+				throw new RuntimeException("Insufficient stock");
+			}
 
-        } else {
+			item.setQuantity(newQty);
+			item.setPrice(product.getPrice() * newQty);
 
-            CartItem item = new CartItem();
-            item.setCart(cart);
-            item.setProduct(product);
-            item.setQuantity(quantity);
-            item.setPrice(product.getPrice());
+		} 
+		else
+		{
 
-            cart.getItems().add(item);
-        }
+			CartItem item = new CartItem();
+			item.setCart(cart);
+			item.setProduct(product);
+			item.setQuantity(quantity);
+			item.setPrice(product.getPrice() * quantity);
 
-        return cartRepository.save(cart);
-    }
+			cart.getItems().add(item);
+		}
 
-    @Override
-    public Cart updateQuantity(Long cartItemId, int quantity, String userEmail) 
-    {
+		return cartRepository.save(cart);
+	}
 
-        CartItem item = cartItemRepository.findById(cartItemId)
-                .orElseThrow(() -> new RuntimeException("Cart item not found"));
+	@Override
+	public Cart updateQuantity(Long cartItemId, int quantity, String userEmail) 
+	{
 
-        if(item.getProduct().getStock() < quantity){
-            throw new RuntimeException("Stock not available");
-        }
+		CartItem item = cartItemRepository.findById(cartItemId)
+				.orElseThrow(() -> new RuntimeException("Cart item not found"));
 
-        item.setQuantity(quantity);
+		if (!item.getCart().getUser().getEmail().equals(userEmail)) 
+		{
+			throw new RuntimeException("Unauthorized access");
+		}
 
-        cartItemRepository.save(item);
+		Product product = item.getProduct();
 
-        return item.getCart();
-    }
+		if (product.getStock() < quantity) 
+		{
+			throw new RuntimeException("Stock not available");
+		}
 
-    @Override
-    public Cart removeItem(Long cartItemId, String userEmail) 
-    {
+		item.setQuantity(quantity);
+		item.setPrice(product.getPrice() * quantity);
 
-        CartItem item = cartItemRepository.findById(cartItemId)
-                .orElseThrow(() -> new RuntimeException("Cart item not found"));
+		cartItemRepository.save(item);
 
-        Cart cart = item.getCart();
+		return item.getCart();
+	}
 
-        cartItemRepository.delete(item);
+	@Override
+	public Cart removeItem(Long cartItemId, String userEmail) 
+	{
 
-        return cart;
-    }
+		CartItem item = cartItemRepository.findById(cartItemId)
+				.orElseThrow(() -> new RuntimeException("Cart item not found"));
 
-    @Override
-    public Cart getUserCart(String userEmail) 
-    {
+		if (!item.getCart().getUser().getEmail().equals(userEmail)) 
+		{
+			throw new RuntimeException("Unauthorized access");
+		}
 
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+		Cart cart = item.getCart();
 
-        return cartRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Cart is empty"));
-    }
+		cart.getItems().remove(item);
+
+		cartItemRepository.delete(item);
+
+		return cart;
+	}
+
+	@Override
+	public Cart getUserCart(String userEmail) 
+	{
+
+		User user = userRepository.findByEmail(userEmail).orElseThrow(() -> new RuntimeException("User not found"));
+		return cartRepository.findByUser(user).orElseThrow(() -> new RuntimeException("Cart is empty"));
+	}
 }

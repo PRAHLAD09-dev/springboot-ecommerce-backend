@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/admin/orders")
 @RequiredArgsConstructor
-//@PreAuthorize("hasRole('Admin')")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminOrderController 
 {
 	 private final OrderService orderService;

@@ -3,6 +3,8 @@ package com.prahlad.ecommerce.service.Order;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.prahlad.ecommerce.entity.Cart;
@@ -96,33 +98,42 @@ public class OrderService
 	public Order updateOrderStatus(Long orderId, OrderStatus status, String email) 
 	{
 
-		User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+		Role role = auth.getAuthorities().stream().map(a -> a.getAuthority().replace("ROLE_", "")).map(Role::valueOf)
+				.findFirst().orElseThrow(() -> new RuntimeException("Role not found"));
 
 		Order order = orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Order not found"));
 
-		if (user.getRole() == Role.ADMIN) 
+		if (role == Role.ADMIN) 
 		{
 
-			if (status != OrderStatus.CONFIRMED && status != OrderStatus.CANCELLED) 
+			if (status != OrderStatus.CONFIRMED && status != OrderStatus.CANCELLED && status != OrderStatus.DELIVERED) 
 			{
-				throw new RuntimeException("Admin can only confirm or cancel order");
+				throw new RuntimeException("Admin can only confirm, cancel or deliver order");
 			}
 
-		} else if (user.getRole() == Role.MERCHANT) 
+			order.setStatus(status);
+		}
+
+		else if (role == Role.MERCHANT) 
 		{
+
+			boolean belongsToMerchant = order.getOrderItems().stream()
+					.anyMatch(i -> i.getProduct().getMerchant().getEmail().equals(email));
+
+			if (!belongsToMerchant) 
+			{
+				throw new RuntimeException("Order does not belong to this merchant");
+			}
 
 			if (status != OrderStatus.SHIPPED) 
 			{
 				throw new RuntimeException("Merchant can only ship order");
 			}
 
-		} 
-		else 
-		{
-			throw new RuntimeException("User cannot update order status");
+			order.setStatus(OrderStatus.SHIPPED);
 		}
-
-		order.setStatus(status);
 
 		return orderRepository.save(order);
 	}
