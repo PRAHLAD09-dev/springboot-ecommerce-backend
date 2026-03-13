@@ -48,6 +48,8 @@ public class Merchant implements UserDetails
 
     private boolean approved = false;
     
+    private boolean active = true;
+    
     @Enumerated(EnumType.STRING)
     private Role role;
 

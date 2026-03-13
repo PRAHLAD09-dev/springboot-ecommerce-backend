@@ -1,11 +1,17 @@
 package com.prahlad.ecommerce.controller;
 
+import java.util.List;
+
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.prahlad.ecommerce.entity.Merchant;
+import com.prahlad.ecommerce.entity.Order;
+import com.prahlad.ecommerce.entity.User;
 import com.prahlad.ecommerce.service.admin.AdminService;
 import lombok.RequiredArgsConstructor;
 
@@ -28,5 +34,33 @@ public class AdminController
     public String approveMerchant(@PathVariable Long merchantId) 
     {
         return adminService.approveMerchant(merchantId);
+    }
+    
+    @GetMapping("/merchants")
+    public List<Merchant> getMerchants()
+    {
+        return adminService.getAllMerchants();
+    }
+    
+    @GetMapping("/users")
+    public List<User> getAllUsers()
+    {
+        return adminService.getAllUsers();
+    }
+
+    @PutMapping("/block/{merchantId}")
+    public String blockMerchant(@PathVariable Long merchantId){
+        return adminService.blockMerchant(merchantId);
+    }
+
+    @PutMapping("/unblock/{merchantId}")
+    public String unblockMerchant(@PathVariable Long merchantId){
+        return adminService.unblockMerchant(merchantId);
+    }
+
+    @GetMapping("/orders")
+    public List<Order> getAllOrders()
+    {
+        return adminService.getAllOrders();
     }
 }
