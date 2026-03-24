@@ -1,43 +1,71 @@
 package com.prahlad.ecommerce.exception;
 
-import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.prahlad.ecommerce.dto.error.ApiError;
+import com.prahlad.ecommerce.dto.apiresponce.ApiResponse;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler 
 {
 
+	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
 	@ExceptionHandler(ResourceNotFoundException.class)
-	public ResponseEntity<ApiError> handleNotFound(ResourceNotFoundException ex) 
+	public ResponseEntity<ApiResponse<Object>> handleNotFound(ResourceNotFoundException ex) 
 	{
-		ApiError error = new ApiError(ex.getMessage(), HttpStatus.NOT_FOUND.value(), LocalDateTime.now());
-		return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
+
+		log.warn("Resource not found: {}", ex.getMessage());
+
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ex.getMessage()));
 	}
 
 	@ExceptionHandler(BadRequestException.class)
-	public ResponseEntity<ApiError> handleBadRequest(BadRequestException ex) 
+	public ResponseEntity<ApiResponse<Object>> handleBadRequest(BadRequestException ex) 
 	{
-		ApiError error = new ApiError(ex.getMessage(), HttpStatus.BAD_REQUEST.value(), LocalDateTime.now());
-		return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+
+		log.warn("Bad request: {}", ex.getMessage());
+
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(ex.getMessage()));
 	}
 
 	@ExceptionHandler(UnauthorizedException.class)
-	public ResponseEntity<ApiError> handleUnauthorized(UnauthorizedException ex) 
+	public ResponseEntity<ApiResponse<Object>> handleUnauthorized(UnauthorizedException ex) 
 	{
-		ApiError error = new ApiError(ex.getMessage(), HttpStatus.UNAUTHORIZED.value(), LocalDateTime.now());
-		return new ResponseEntity<>(error, HttpStatus.UNAUTHORIZED);
+
+		log.warn("Unauthorized access: {}", ex.getMessage());
+
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(ex.getMessage()));
+	}
+
+	@ExceptionHandler(MethodArgumentNotValidException.class)
+	public ResponseEntity<ApiResponse<Map<String, String>>> handleValidation(MethodArgumentNotValidException ex) 
+	{
+
+		Map<String, String> errors = new HashMap<>();
+
+		ex.getBindingResult().getFieldErrors().forEach(err -> errors.put(err.getField(), err.getDefaultMessage()));
+
+		log.warn("Validation failed: {}", errors);
+
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.body(new ApiResponse<>(false, "Validation failed", errors));
 	}
 
 	@ExceptionHandler(Exception.class)
-	public ResponseEntity<ApiError> handleGlobal(Exception ex) 
+	public ResponseEntity<ApiResponse<Object>> handleGlobal(Exception ex) 
 	{
-		ApiError error = new ApiError(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value(), LocalDateTime.now());
-		return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+
+		log.error("Unexpected error occurred: ", ex);
+
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error("Something went wrong"));
 	}
 }
