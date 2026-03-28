@@ -6,10 +6,15 @@ import org.springframework.stereotype.Service;
 import com.prahlad.ecommerce.dto.merchant.MerchantResponse;
 import com.prahlad.ecommerce.dto.merchant.MerchantUpdateRequest;
 import com.prahlad.ecommerce.entity.Merchant;
+import com.prahlad.ecommerce.enums.NotificationType;
+import com.prahlad.ecommerce.enums.OTPType;
 import com.prahlad.ecommerce.exception.BadRequestException;
 import com.prahlad.ecommerce.exception.ResourceNotFoundException;
 import com.prahlad.ecommerce.repository.MerchantRepository;
+import com.prahlad.ecommerce.service.notification.NotificationService;
+import com.prahlad.ecommerce.service.otp.OtpService;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -19,6 +24,9 @@ public class MerchantServiceImpl implements MerchantService
 
     private final MerchantRepository merchantRepository;
     private final PasswordEncoder passwordEncoder;
+    private final OtpService otpService;
+    private final NotificationService notificationService;
+    
 
     @Override
     public MerchantResponse getProfile(String email) 
@@ -67,14 +75,29 @@ public class MerchantServiceImpl implements MerchantService
     }
 
     @Override
-    public void deleteAccount(String email) 
-    {
+	public void requestDeleteAccount(String email)
+	{
+		otpService.generateOtp(email, OTPType.DELETE_ACCOUNT);
+	}
 
-        Merchant merchant = merchantRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Merchant not found"));
+    @Override
+	@Transactional
+	public void deleteAccount(String email, String otp) 
+	{
 
-        merchantRepository.delete(merchant);
-    }
+		otpService.verifyOtp(email, otp, OTPType.DELETE_ACCOUNT);
+
+		Merchant merchant = merchantRepository.findByEmail(email)
+				.orElseThrow(() -> new ResourceNotFoundException("Merchant not found"));
+
+		merchant.setActive(false);
+		merchant.setApproved(false);
+
+		merchantRepository.save(merchant);
+
+		notificationService.sendNotification(email, "Merchant Account Deleted",
+				"Your merchant account has been deactivated successfully.", NotificationType.ACCOUNT_DELETED);
+	}
 
     private MerchantResponse mapToDTO(Merchant merchant) 
     {

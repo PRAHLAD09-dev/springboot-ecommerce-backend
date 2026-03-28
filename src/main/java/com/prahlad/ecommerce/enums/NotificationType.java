@@ -15,5 +15,6 @@ public enum NotificationType
     ACCOUNT_BLOCKED,
     ACCOUNT_UNBLOCKED, 
     NEW_ORDER_ADMIN,
-    PROMOTION,
+    PROMOTION, 
+    ACCOUNT_DELETED,
 }

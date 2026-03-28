@@ -3,5 +3,6 @@ package com.prahlad.ecommerce.enums;
  public enum OTPType 
 {
     REGISTER,
-    FORGOT_PASSWORD
+    FORGOT_PASSWORD, 
+    DELETE_ACCOUNT
 }

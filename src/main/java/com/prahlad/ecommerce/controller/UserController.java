@@ -65,12 +65,26 @@ public class UserController
 	// ======================
 	// DELETE ACCOUNT
 	// ======================
-	@DeleteMapping("/account")
-	public ResponseEntity<ApiResponse<String>> deleteAccount(Authentication authentication) 
+	
+	@PostMapping("/delete/request")
+	public ApiResponse<String> requestDeleteAccount(Authentication authentication) 
 	{
 
-		userService.deleteAccount(authentication.getName());
+		String email = authentication.getName();
 
-		return ResponseEntity.ok(ApiResponse.success("Account deleted successfully", null));
+		userService.requestDeleteAccount(email);
+
+		return ApiResponse.success("OTP sent for account deletion", null);
+	}
+
+	@DeleteMapping("/delete")
+	public ApiResponse<String> deleteAccount(@RequestParam String otp, Authentication authentication) 
+	{
+
+		String email = authentication.getName();
+
+		userService.deleteAccount(email, otp);
+
+		return ApiResponse.success("Account deleted successfully", null);
 	}
 }

@@ -12,11 +12,13 @@ public interface UserService
 	
 	UserResponse getProfile(String email);
 
-//	void resetPassword(ResetPasswordRequest request);
 	
 	  UserResponse updateProfile(String email, UserUpdateRequest request);
 
-    void deleteAccount(String email);
+    void deleteAccount(String email , String otp);
 
     String changePassword(String email, String oldPassword, String newPassword);
+
+
+	void requestDeleteAccount(String email);
 }

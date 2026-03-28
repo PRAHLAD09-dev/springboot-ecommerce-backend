@@ -45,11 +45,24 @@ public class MerchantController
 		return ApiResponse.success("Password changed successfully", null);
 	}
 
-	@DeleteMapping("/account")
-	public ApiResponse<String> deleteAccount(Authentication auth) 
+	@PostMapping("/delete/request")
+	public ApiResponse<String> requestDelete(Authentication authentication) 
 	{
 
-		merchantService.deleteAccount(auth.getName());
+		String email = authentication.getName();
+
+		merchantService.requestDeleteAccount(email);
+
+		return ApiResponse.success("OTP sent for merchant account deletion", null);
+	}
+
+	@DeleteMapping("/delete")
+	public ApiResponse<String> deleteAccount(@RequestParam String otp, Authentication authentication) 
+	{
+
+		String email = authentication.getName();
+
+		merchantService.deleteAccount(email, otp);
 
 		return ApiResponse.success("Merchant account deleted successfully", null);
 	}

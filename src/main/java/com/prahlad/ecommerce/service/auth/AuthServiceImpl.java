@@ -58,16 +58,26 @@ public class AuthServiceImpl implements AuthService
 
          userRepository.save(user);
  
-         notificationService.sendNotification(
-        		    user.getEmail(),
-        		    "Hi,\n\n" +
-        		    "Welcome to Ecommerce App \n\n" +
-        		    "Your account has been successfully created.\n\n" +
-        		    "If you did not request this, please ignore this email.\n\n" +
-        		    "Thanks,\n" ,
-        		    "Ecommerce Team",
-        		    NotificationType.REGISTER_SUCCESS
-        		);
+         
+         String message = """
+        		 Hi,
+
+        		 Welcome to Ecommerce App 
+
+        		 Your account has been successfully created.
+
+        		 If you did not request this, please ignore this email.
+
+        		 Thanks,
+        		 Ecommerce Team
+        		 """;
+
+        		 notificationService.sendNotification(
+        		     user.getEmail(),
+        		     "Welcome to Ecommerce App ",
+        		     message,
+        		     NotificationType.REGISTER_SUCCESS
+        		 );
 
         return new AuthResponse(
                 "User registered successfully",
@@ -97,14 +107,27 @@ public class AuthServiceImpl implements AuthService
         merchantRepository.save(merchant);
         
   
+        String message = """
+       		 Hi,
+
+       		 Welcome to Ecommerce App 
+
+       		 Your account has been successfully created.
+
+       		 If you did not request this, please ignore this email.
+       		 
+       		 Your merchant account is created. Awaiting admin approval.
+
+       		 Thanks,
+       		 Ecommerce Team
+       		 """;
+
         notificationService.sendNotification(
-             merchant.getEmail(),
-             "Hi,\n\n" +
-         		    "Welcome to Ecommerce App \n\n" +
-         		    "Your account has been successfully created.\n\n" ,
-             "Your merchant account is created. Awaiting admin approval.",
-             NotificationType.REGISTER_SUCCESS
-     );
+                merchant.getEmail(),
+       		     "Welcome to Ecommerce App ",
+       		     message,
+       		     NotificationType.REGISTER_SUCCESS
+       		 );
 
      return new AuthResponse(
              "Merchant registered successfully. Awaiting admin approval.",
