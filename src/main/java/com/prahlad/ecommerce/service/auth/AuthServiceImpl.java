@@ -12,6 +12,7 @@ import com.prahlad.ecommerce.dto.merchant.MerchantRegisterRequest;
 import com.prahlad.ecommerce.dto.user.UserRegisterRequest;
 import com.prahlad.ecommerce.entity.Merchant;
 import com.prahlad.ecommerce.entity.User;
+import com.prahlad.ecommerce.enums.NotificationType;
 import com.prahlad.ecommerce.enums.OTPType;
 import com.prahlad.ecommerce.enums.Role;
 import com.prahlad.ecommerce.exception.BadRequestException;
@@ -19,6 +20,7 @@ import com.prahlad.ecommerce.exception.ResourceNotFoundException;
 import com.prahlad.ecommerce.repository.MerchantRepository;
 import com.prahlad.ecommerce.repository.UserRepository;
 import com.prahlad.ecommerce.security.JwtUtil;
+import com.prahlad.ecommerce.service.notification.NotificationService;
 import com.prahlad.ecommerce.service.otp.OtpService;
 
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,7 @@ public class AuthServiceImpl implements AuthService
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final OtpService otpService;
+    private final NotificationService notificationService;
 
     @Override
     public  AuthResponse registerUser(UserRegisterRequest request)
@@ -53,7 +56,18 @@ public class AuthServiceImpl implements AuthService
                 .active(true)
                 .build();
 
-        userRepository.save(user);
+         userRepository.save(user);
+ 
+         notificationService.sendNotification(
+        		    user.getEmail(),
+        		    "Hi,\n\n" +
+        		    "Welcome to Ecommerce App \n\n" +
+        		    "Your account has been successfully created.\n\n" +
+        		    "If you did not request this, please ignore this email.\n\n" +
+        		    "Thanks,\n" ,
+        		    "Ecommerce Team",
+        		    NotificationType.REGISTER_SUCCESS
+        		);
 
         return new AuthResponse(
                 "User registered successfully",
@@ -81,14 +95,24 @@ public class AuthServiceImpl implements AuthService
                 .build();
 
         merchantRepository.save(merchant);
+        
+  
+        notificationService.sendNotification(
+             merchant.getEmail(),
+             "Hi,\n\n" +
+         		    "Welcome to Ecommerce App \n\n" +
+         		    "Your account has been successfully created.\n\n" ,
+             "Your merchant account is created. Awaiting admin approval.",
+             NotificationType.REGISTER_SUCCESS
+     );
 
-        return new AuthResponse(
-                "Merchant registered successfully."
-                + "Awaiting admin approval.",
-                merchant.getEmail(),
-                merchant.getRole().name(),
-                null
-        );
+     return new AuthResponse(
+             "Merchant registered successfully. Awaiting admin approval.",
+             merchant.getEmail(),
+             merchant.getRole().name(),
+             null
+     );
+
     }
 
  
@@ -167,9 +191,6 @@ public class AuthServiceImpl implements AuthService
 		
 	}
     
-    // =========================
-    // RESET PASSWORD (OTP REQUIRED)
-    // =========================
 	@Override
 	public void resetPassword(ResetPasswordRequest request) 
 	{

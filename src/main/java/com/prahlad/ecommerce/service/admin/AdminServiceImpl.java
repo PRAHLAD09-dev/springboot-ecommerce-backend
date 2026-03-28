@@ -11,10 +11,12 @@ import com.prahlad.ecommerce.dto.user.UserResponse;
 import com.prahlad.ecommerce.entity.Merchant;
 import com.prahlad.ecommerce.entity.Order;
 import com.prahlad.ecommerce.entity.User;
+import com.prahlad.ecommerce.enums.NotificationType;
 import com.prahlad.ecommerce.exception.ResourceNotFoundException;
 import com.prahlad.ecommerce.repository.MerchantRepository;
 import com.prahlad.ecommerce.repository.OrderRepository;
 import com.prahlad.ecommerce.repository.UserRepository;
+import com.prahlad.ecommerce.service.notification.NotificationService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +28,8 @@ public class AdminServiceImpl implements AdminService
 	private final MerchantRepository merchantRepository;
 	private final OrderRepository orderRepository;
 	private final UserRepository userRepository;
+	private final NotificationService notificationService;
+
 
 	// ================= APPROVE =================
 	@Override
@@ -36,15 +40,29 @@ public class AdminServiceImpl implements AdminService
 		Merchant merchant = merchantRepository.findById(merchantId)
 				.orElseThrow(() -> new ResourceNotFoundException("Merchant not found"));
 
-		if (merchant.isApproved()) 
+		if (merchant.isApproved())
 		{
-			return "Merchant already approved";
+		    notificationService.sendNotification(
+		        merchant.getEmail(),
+		        "Already Approved",
+		        "Your merchant account is already approved.",
+		        NotificationType.MERCHANT_APPROVED
+		    );
+
+		    return "Merchant already approved";
 		}
 
 		merchant.setApproved(true);
 		merchant.setActive(true);
 
 		merchantRepository.save(merchant);
+		
+		notificationService.sendNotification(
+			    merchant.getEmail(),
+			    "Account Approved ",
+			    "Your merchant account has been approved. You can now start selling ",
+			    NotificationType.MERCHANT_APPROVED
+			);
 
 		return "Merchant approved successfully";
 	}
@@ -75,6 +93,13 @@ public class AdminServiceImpl implements AdminService
 
 		merchant.setActive(false);
 		merchantRepository.save(merchant);
+		
+		notificationService.sendNotification(
+				merchant.getEmail(),
+		    "Account Blocked ",
+		    "Your account has been blocked by admin.",
+		    NotificationType.ACCOUNT_BLOCKED
+		);
 
 		return "Merchant blocked successfully";
 	}
@@ -89,6 +114,13 @@ public class AdminServiceImpl implements AdminService
 
 		merchant.setActive(true);
 		merchantRepository.save(merchant);
+		
+		notificationService.sendNotification(
+				merchant.getEmail(),
+			    "Account Activated ",
+			    "Your account is now active again.",
+			    NotificationType.ACCOUNT_UNBLOCKED
+			);
 
 		return "Merchant unblocked successfully";
 	}

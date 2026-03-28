@@ -31,7 +31,17 @@ public class UserOrderController
 
 		return ApiResponse.success("Order placed successfully", response);
 	}
+	
+	@PutMapping("/cancel/{orderId}")
+	public ApiResponse<OrderResponse> cancelOrder(@PathVariable Long orderId, Authentication authentication) 
+	{
+		String email = authentication.getName();
 
+		OrderResponse response = orderService.cancelOrder(orderId, email);
+
+		return ApiResponse.success("Order cancelled successfully", response);
+	}
+	
 	@GetMapping("/my-orders")
 	public ApiResponse<List<OrderResponse>> getUserOrders(@RequestParam(required = false) OrderStatus status,
 			Authentication authentication) 

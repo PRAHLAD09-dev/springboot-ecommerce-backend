@@ -1,0 +1,19 @@
+package com.prahlad.ecommerce.enums;
+
+public enum NotificationType 
+{
+    REGISTER_SUCCESS,
+    ORDER_PLACED,
+    PAYMENT_SUCCESS,
+    ORDER_CONFIRMED,
+    OUT_FOR_DELIVERY,
+    CART_REMINDER,
+    ORDER_SHIPPED, 
+    ORDER_DELIVERED, 
+    ORDER_CANCELLED, 
+    MERCHANT_APPROVED,
+    ACCOUNT_BLOCKED,
+    ACCOUNT_UNBLOCKED, 
+    NEW_ORDER_ADMIN,
+    PROMOTION,
+}

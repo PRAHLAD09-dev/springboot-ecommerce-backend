@@ -13,6 +13,7 @@ import com.prahlad.ecommerce.enums.OTPType;
 import com.prahlad.ecommerce.service.auth.AuthService;
 import com.prahlad.ecommerce.service.otp.OtpService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -40,7 +41,7 @@ public class AuthController
 	// USER REGISTER
 	// ======================
 	@PostMapping("/user/register")
-	public ResponseEntity<ApiResponse<AuthResponse>> registerUser(@RequestBody UserRegisterRequest request) 
+	public ResponseEntity<ApiResponse<AuthResponse>> registerUser(@Valid @RequestBody UserRegisterRequest request) 
 	{
 
 		otpService.verifyOtp(request.email(), request.otp(), OTPType.REGISTER);
@@ -54,7 +55,7 @@ public class AuthController
 	// MERCHANT REGISTER
 	// ======================
 	@PostMapping("/merchant/register")
-	public ResponseEntity<ApiResponse<AuthResponse>> registerMerchant(@RequestBody MerchantRegisterRequest request) 
+	public ResponseEntity<ApiResponse<AuthResponse>> registerMerchant(@Valid @RequestBody MerchantRegisterRequest request) 
 	{
 
 		otpService.verifyOtp(request.email(), request.otp(), OTPType.REGISTER);
@@ -88,6 +89,9 @@ public class AuthController
 		return ResponseEntity.ok(ApiResponse.success("OTP sent", null));
 	}
 	
+	// ======================
+	// RESET PASSWORD
+	// ======================
 	@PostMapping("/reset-password")
 	public ResponseEntity<ApiResponse<?>> resetPassword(@RequestBody ResetPasswordRequest request) 
 	{

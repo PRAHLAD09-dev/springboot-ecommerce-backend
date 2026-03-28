@@ -7,9 +7,11 @@ import org.springframework.web.bind.annotation.*;
 
 import com.prahlad.ecommerce.dto.apiresponce.ApiResponse;
 import com.prahlad.ecommerce.dto.merchant.MerchantResponse;
+import com.prahlad.ecommerce.dto.notification.PromotionRequest;
 import com.prahlad.ecommerce.dto.order.OrderResponse;
 import com.prahlad.ecommerce.dto.user.UserResponse;
 import com.prahlad.ecommerce.service.admin.AdminService;
+import com.prahlad.ecommerce.service.admin.PromotionService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,6 +23,7 @@ public class AdminController
 {
 
 	private final AdminService adminService;
+	private final PromotionService promotionService;
 
 	@GetMapping("/dashboard")
 	public ApiResponse<String> adminDashboard() 
@@ -28,6 +31,14 @@ public class AdminController
 		return ApiResponse.success("Admin access granted", "OK");
 	}
 
+	@PostMapping("/promotion")
+	public ApiResponse<String> sendPromotion(@RequestBody PromotionRequest request) 
+	{
+		promotionService.sendPromotionToAllUsers(request.title(), request.message());
+
+		return ApiResponse.success("Promotion sent successfully", null);
+	}
+	
 	@PutMapping("/approve/{merchantId}")
 	public ApiResponse<String> approveMerchant(@PathVariable Long merchantId) 
 	{

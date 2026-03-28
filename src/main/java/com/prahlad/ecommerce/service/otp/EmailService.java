@@ -12,8 +12,6 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService 
 {
-	
-	
 
     @Value("${sendgrid.api.key}")
     private String apiKey;
@@ -47,23 +45,14 @@ public class EmailService
 
         try 
         {
-//        	System.out.println("EMAIL START");
-
         	SendGrid sg = new SendGrid(apiKey);
-//        	System.out.println("SENDGRID CREATED");
 
         	Request request = new Request();
         	request.setMethod(Method.POST);
         	request.setEndpoint("mail/send");
         	request.setBody(mail.build());
 
-//        	System.out.println("REQUEST READY");
-
-        	Response response = sg.api(request);
-
-//        	System.out.println("RESPONSE: " + response.getStatusCode());
-            
-            
+        	Response response = sg.api(request);      
 
             if (response.getStatusCode() >= 400) 
             {
@@ -77,29 +66,37 @@ public class EmailService
             throw new EmailException("Email sending failed");
         }
     }
+    
+    public void sendSimpleMail(String toEmail, String subject, String body) 
+    {
+        
+        Email from = new Email(fromEmail, "Ecommerce App");
+        Email to = new Email(toEmail);
+
+        Content content = new Content("text/plain", body);
+
+        Mail mail = new Mail(from, subject, to, content);
+
+        SendGrid sg = new SendGrid(apiKey);
+
+        Request request = new Request();
+        try 
+        {
+            request.setMethod(Method.POST);
+            request.setEndpoint("mail/send");
+            request.setBody(mail.build());
+
+            Response response = sg.api(request);
+
+            if (response.getStatusCode() >= 400) 
+            {
+                throw new EmailException("Email sending failed");
+            }
+
+        } 
+        catch (Exception e) 
+        {
+            throw new EmailException("Error sending email: " + e.getMessage());
+        }
+    }
 }
-//@Service
-//@RequiredArgsConstructor
-//public class EmailService 
-//{
-//
-//    private final JavaMailSender mailSender;
-//
-//    @Async
-//    public void sendOtp(String to, String otp) 
-//    {
-//
-//        SimpleMailMessage message = new SimpleMailMessage();
-//        message.setTo(to);
-//        message.setSubject("OTP Verification - ECommerce App");
-//        message.setText("""
-//        		Your OTP is: %s
-//
-//        		Valid for 5 minutes.
-//
-//        		Do not share this with anyone.
-//        		""".formatted(otp));
-//
-//        mailSender.send(message);
-//    }
-//}

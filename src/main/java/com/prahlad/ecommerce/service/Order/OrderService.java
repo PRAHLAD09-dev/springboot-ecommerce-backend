@@ -3,6 +3,8 @@ package com.prahlad.ecommerce.service.Order;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +20,7 @@ import com.prahlad.ecommerce.entity.OrderItem;
 import com.prahlad.ecommerce.entity.OrderStatusHistory;
 import com.prahlad.ecommerce.entity.Product;
 import com.prahlad.ecommerce.entity.User;
+import com.prahlad.ecommerce.enums.NotificationType;
 import com.prahlad.ecommerce.enums.OrderStatus;
 import com.prahlad.ecommerce.enums.Role;
 import com.prahlad.ecommerce.exception.BadRequestException;
@@ -28,6 +31,7 @@ import com.prahlad.ecommerce.repository.CartRepository;
 import com.prahlad.ecommerce.repository.OrderRepository;
 import com.prahlad.ecommerce.repository.OrderStatusHistoryRepository;
 import com.prahlad.ecommerce.repository.UserRepository;
+import com.prahlad.ecommerce.service.notification.NotificationService;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +46,7 @@ public class OrderService
 	private final OrderRepository orderRepository;
 	private final UserRepository userRepository;
 	private final OrderStatusHistoryRepository orderStatusHistoryRepository;
+	private final NotificationService notificationService;
 
 	
 	@Transactional
@@ -92,6 +97,21 @@ public class OrderService
 		order.setTotalPrice(totalPrice);
 
 		Order savedOrder = orderRepository.save(order);
+		
+		notificationService.sendNotification(
+		    user.getEmail(),
+		    "Order Placed ",
+		    "Your order #" + savedOrder.getId() + " has been placed successfully.",
+		    NotificationType.ORDER_PLACED
+		);
+		
+	
+		notificationService.sendNotification(
+			"prahladbhakat05@gmail.com",  
+		    "New Order Received ",
+		    "New order #" + savedOrder.getId() + " placed by " + user.getEmail(),
+		    NotificationType.NEW_ORDER_ADMIN
+		);
 
 		OrderStatusHistory history = new OrderStatusHistory();
 		history.setOrder(savedOrder);
@@ -104,6 +124,44 @@ public class OrderService
 		cartItemRepository.deleteAll(cart.getItems());
 		cart.getItems().clear();
 		cartRepository.save(cart);
+
+		return mapToDTO(savedOrder);
+	}
+	
+	@Transactional
+	public OrderResponse cancelOrder(Long orderId, String email) 
+	{
+		Order order = orderRepository.findByIdAndUserEmail(orderId, email)
+				.orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+		if (order.getStatus() == OrderStatus.DELIVERED) 
+		{
+			throw new BadRequestException("Delivered order cannot be cancelled");
+		}
+
+		if (order.getStatus() == OrderStatus.CANCELLED) 
+		{
+			throw new BadRequestException("Order already cancelled");
+		}
+
+		if (order.getStatus() == OrderStatus.SHIPPED) 
+		{
+			throw new BadRequestException("Shipped order cannot be cancelled");
+		}
+
+		order.setStatus(OrderStatus.CANCELLED);
+		Order savedOrder = orderRepository.save(order);
+
+		OrderStatusHistory history = new OrderStatusHistory();
+		history.setOrder(savedOrder);
+		history.setStatus(OrderStatus.CANCELLED);
+		history.setUpdatedAt(LocalDateTime.now());
+		history.setUpdatedBy(email);
+
+		orderStatusHistoryRepository.save(history);
+
+		notificationService.sendNotification(savedOrder.getUser().getEmail(), "Order Cancelled ",
+				"Your order #" + savedOrder.getId() + " has been cancelled.", NotificationType.ORDER_CANCELLED);
 
 		return mapToDTO(savedOrder);
 	}
@@ -173,6 +231,38 @@ public class OrderService
 
 		Order savedOrder = orderRepository.save(order);
 
+		if (status == OrderStatus.CONFIRMED) 
+		{
+			Set<String> merchantEmails = savedOrder.getOrderItems().stream()
+					.map(item -> item.getProduct().getMerchant().getEmail()).collect(Collectors.toSet());
+
+			for (String merchantEmail : merchantEmails) 
+			{
+				notificationService.sendNotification(merchantEmail, "New Order Confirmed",
+						"You received a confirmed order #" + savedOrder.getId(), NotificationType.ORDER_CONFIRMED);
+			}
+
+			notificationService.sendNotification(savedOrder.getUser().getEmail(), "Order Confirmed",
+					"Your order #" + savedOrder.getId() + " has been confirmed.", NotificationType.ORDER_CONFIRMED);
+		}
+
+		else if (status == OrderStatus.SHIPPED) 
+		{
+			notificationService.sendNotification(savedOrder.getUser().getEmail(), "Order Shipped ",
+					"Your order #" + savedOrder.getId() + " is on the way.", NotificationType.ORDER_SHIPPED);
+		}
+
+		else if (status == OrderStatus.DELIVERED) 
+		
+			notificationService.sendNotification(savedOrder.getUser().getEmail(), "Order Delivered ",
+					"Your order #" + savedOrder.getId() + " has been delivered.", NotificationType.ORDER_DELIVERED);
+
+		else if (status == OrderStatus.CANCELLED) 
+		{
+			notificationService.sendNotification(savedOrder.getUser().getEmail(), "Order Cancelled",
+					"Your order #" + savedOrder.getId() + " has been cancelled.", NotificationType.ORDER_CANCELLED);
+		}
+
 	    OrderStatusHistory history = new OrderStatusHistory();
 	    history.setOrder(savedOrder);
 	    history.setStatus(savedOrder.getStatus());
@@ -182,7 +272,7 @@ public class OrderService
 	    orderStatusHistoryRepository.save(history);
 
 	    return mapToDTO(savedOrder); 
-	}
+ }
 	
 	public List<OrderResponse> getMerchantOrders(String email) 
 	{

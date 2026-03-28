@@ -1,9 +1,11 @@
 package com.prahlad.ecommerce.service.payment;
 
 import org.springframework.stereotype.Service;
+
 import com.prahlad.ecommerce.dto.payment.PaymentResponse;
 import com.prahlad.ecommerce.entity.Order;
 import com.prahlad.ecommerce.entity.Payment;
+import com.prahlad.ecommerce.enums.NotificationType;
 import com.prahlad.ecommerce.enums.OrderStatus;
 import com.prahlad.ecommerce.enums.PaymentStatus;
 import com.prahlad.ecommerce.exception.BadRequestException;
@@ -11,6 +13,8 @@ import com.prahlad.ecommerce.exception.ResourceNotFoundException;
 import com.prahlad.ecommerce.exception.UnauthorizedException;
 import com.prahlad.ecommerce.repository.OrderRepository;
 import com.prahlad.ecommerce.repository.PaymentRepository;
+import com.prahlad.ecommerce.service.notification.NotificationService;
+
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -20,11 +24,14 @@ public class PaymentService
 
 	private final PaymentRepository paymentRepository;
 	private final OrderRepository orderRepository;
+	private final NotificationService notificationService;
 
 	public PaymentResponse makePayment(Long orderId, String email) 
 	{
 
-		Order order = orderRepository.findById(orderId).orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+		Order order = orderRepository.findById(orderId)
+				.orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
 
 		if (!order.getUser().getEmail().equals(email)) 
 		{
@@ -45,14 +52,24 @@ public class PaymentService
 		payment.setOrder(order);
 		payment.setAmount(order.getTotalPrice());
 		payment.setStatus(PaymentStatus.SUCCESS);
-		payment.setTransactionId("TXN_" + System.currentTimeMillis());
+		payment.setTransactionId(generateTxnId());
 
 		order.setPaid(true);
 		orderRepository.save(order);
 
-		Payment saved = paymentRepository.save(payment);
+		Payment savedPayment = paymentRepository.save(payment);
 
-		return mapToDTO(saved);
+		notificationService.sendNotification(
+				order.getUser().getEmail(), "Payment Successful ", "Payment of ₹" + order.getTotalPrice()
+						+ " received for Order #" + order.getId() + ". Your order is now being processed ",
+				NotificationType.PAYMENT_SUCCESS);
+
+		return mapToDTO(savedPayment);
+	}
+
+	private String generateTxnId() 
+	{
+		return "TXN_" + System.currentTimeMillis();
 	}
 
 	private PaymentResponse mapToDTO(Payment payment) 
