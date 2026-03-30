@@ -17,10 +17,8 @@ public class NotificationService
     private final NotificationRepository notificationRepository;
     private final EmailService emailService;
 
-    public void sendNotification(String email, String title, String message, NotificationType type) 
+    public void sendNotification(String email, String title, String message, NotificationType type)
     {
-
- 
         Notification n = new Notification();
         n.setEmail(email);
         n.setTitle(title);
@@ -29,6 +27,13 @@ public class NotificationService
 
         notificationRepository.save(n);
 
-        emailService.sendSimpleMail(email, title, message);
+        if (type == NotificationType.REGISTER_SUCCESS) 
+        {
+            emailService.sendHtmlMail(email, title, message);
+        } 
+        else 
+        {
+            emailService.sendSimpleMail(email, title, message);
+        }
     }
 }

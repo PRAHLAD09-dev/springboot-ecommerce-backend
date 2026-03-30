@@ -1,5 +1,6 @@
 package com.prahlad.ecommerce.service.auth;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -9,8 +10,10 @@ import com.prahlad.ecommerce.dto.auth.AuthResponse;
 import com.prahlad.ecommerce.dto.auth.LoginRequest;
 import com.prahlad.ecommerce.dto.auth.ResetPasswordRequest;
 import com.prahlad.ecommerce.dto.merchant.MerchantRegisterRequest;
+import com.prahlad.ecommerce.dto.otp.OtpRequest;
 import com.prahlad.ecommerce.dto.user.UserRegisterRequest;
 import com.prahlad.ecommerce.entity.Merchant;
+import com.prahlad.ecommerce.entity.Otp;
 import com.prahlad.ecommerce.entity.User;
 import com.prahlad.ecommerce.enums.NotificationType;
 import com.prahlad.ecommerce.enums.OTPType;
@@ -18,9 +21,11 @@ import com.prahlad.ecommerce.enums.Role;
 import com.prahlad.ecommerce.exception.BadRequestException;
 import com.prahlad.ecommerce.exception.ResourceNotFoundException;
 import com.prahlad.ecommerce.repository.MerchantRepository;
+import com.prahlad.ecommerce.repository.OtpRepository;
 import com.prahlad.ecommerce.repository.UserRepository;
 import com.prahlad.ecommerce.security.JwtUtil;
 import com.prahlad.ecommerce.service.notification.NotificationService;
+import com.prahlad.ecommerce.service.otp.EmailService;
 import com.prahlad.ecommerce.service.otp.OtpService;
 
 import lombok.RequiredArgsConstructor;
@@ -36,8 +41,10 @@ public class AuthServiceImpl implements AuthService
     private final MerchantRepository merchantRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final OtpRepository otpRepository;
     private final OtpService otpService;
     private final NotificationService notificationService;
+    private final EmailService emailService;
 
     @Override
     public  AuthResponse registerUser(UserRegisterRequest request)
@@ -58,26 +65,38 @@ public class AuthServiceImpl implements AuthService
 
          userRepository.save(user);
  
-         
-         String message = """
-        		 Hi,
+         String plainMessage = "Your account has been successfully created.";
 
-        		 Welcome to Ecommerce App 
+         String htmlMessage = """
+         <html>
+         <body>
+         <h2>Welcome to Ecommerce App </h2>
+         <p>Your account has been successfully created.</p>
+         <br>
+         <a href="https://ecommerce-backend-o9vh.onrender.com/swagger-ui/index.html#/">
+             <button style="padding:10px;background:green;color:white;border:none;">
+                 Start Shopping
+             </button>
+         </a>
+         <br><br>
+         Thanks,<br>
+         Ecommerce Team
+         </body>
+         </html>
+         """;
 
-        		 Your account has been successfully created.
+         notificationService.sendNotification(
+                 user.getEmail(),
+                 "Welcome to Ecommerce App",
+                 plainMessage,
+                 NotificationType.REGISTER_SUCCESS
+         );
 
-        		 If you did not request this, please ignore this email.
-
-        		 Thanks,
-        		 Ecommerce Team
-        		 """;
-
-        		 notificationService.sendNotification(
-        		     user.getEmail(),
-        		     "Welcome to Ecommerce App ",
-        		     message,
-        		     NotificationType.REGISTER_SUCCESS
-        		 );
+         emailService.sendHtmlMail(
+                 user.getEmail(),
+                 "Welcome to Ecommerce App",
+                 htmlMessage
+         );
 
         return new AuthResponse(
                 "User registered successfully",
@@ -201,18 +220,42 @@ public class AuthServiceImpl implements AuthService
     }
 
     @Override
-	public void sendForgotPasswordOtp(String email) 
-	{
+    public void sendForgotPasswordOtp(OtpRequest request)
+    {
+        String email = request.email();
 
 		boolean exists = userRepository.existsByEmail(email) || merchantRepository.existsByEmail(email);
 
-		if (exists) 
-		{
-			otpService.generateOtp(email, OTPType.FORGOT_PASSWORD);
-		}
+        if (!exists) 
+        {
+            return;
+        }
 
-		
-	}
+        Optional<Otp> optionalOtp = otpRepository.findTopByEmailAndTypeOrderByIdDesc(email, OTPType.FORGOT_PASSWORD);
+
+        if (optionalOtp.isPresent()) 
+        {
+            Otp otp = optionalOtp.get();
+
+            if (otp.getExpiryTime().isAfter(LocalDateTime.now())) 
+            {
+
+                if (otp.getAttempts() >= 3) 
+                {
+                    return; 
+                }
+
+                otp.setAttempts(otp.getAttempts() + 1);
+                otpRepository.save(otp);
+
+                emailService.sendOtp(email, otp.getOtp());
+
+                return;
+            }
+        }
+
+        otpService.generateOtp(email, OTPType.FORGOT_PASSWORD);
+    }
     
 	@Override
 	public void resetPassword(ResetPasswordRequest request) 

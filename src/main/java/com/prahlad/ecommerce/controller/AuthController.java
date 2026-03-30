@@ -69,7 +69,7 @@ public class AuthController
 	// LOGIN
 	// ======================
 	@PostMapping("/login")
-	public ResponseEntity<ApiResponse<AuthResponse>> login(@RequestBody LoginRequest request) 
+	public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) 
 	{
 
 		AuthResponse response = authService.login(request);
@@ -81,21 +81,19 @@ public class AuthController
 	// FORGOT PASSWORD OTP
 	// ======================
 	@PostMapping("/forgot-password")
-	public ResponseEntity<ApiResponse<?>> forgotPassword(@RequestBody OtpRequest request) 
+	public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody OtpRequest request) 
 	{
+		authService.sendForgotPasswordOtp(request);
 
-		authService.sendForgotPasswordOtp(request.email());
-
-		return ResponseEntity.ok(ApiResponse.success("OTP sent", null));
+		return ResponseEntity.ok(ApiResponse.success("If the email exists, OTP has been sent", null));
 	}
 	
 	// ======================
 	// RESET PASSWORD
 	// ======================
 	@PostMapping("/reset-password")
-	public ResponseEntity<ApiResponse<?>> resetPassword(@RequestBody ResetPasswordRequest request) 
+	public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) 
 	{
-
 		authService.resetPassword(request);
 
 		return ResponseEntity.ok(ApiResponse.success("Password reset successful", null));

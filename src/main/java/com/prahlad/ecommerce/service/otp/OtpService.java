@@ -60,7 +60,7 @@ public class OtpService
 		Otp otp = otpRepository.findTopByEmailAndTypeOrderByIdDesc(email, type)
 				.orElseThrow(() -> new ResourceNotFoundException("OTP not found"));
 
-		if (otp.getAttempts() >= 5) 
+		if (otp.getAttempts() >= 3) 
 		{
 			throw new BadRequestException("Too many attempts. Try later.");
 		}

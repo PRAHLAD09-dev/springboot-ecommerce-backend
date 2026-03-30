@@ -6,6 +6,7 @@ import com.prahlad.ecommerce.dto.auth.AuthResponse;
 import com.prahlad.ecommerce.dto.auth.LoginRequest;
 import com.prahlad.ecommerce.dto.auth.ResetPasswordRequest;
 import com.prahlad.ecommerce.dto.merchant.MerchantRegisterRequest;
+import com.prahlad.ecommerce.dto.otp.OtpRequest;
 import com.prahlad.ecommerce.dto.user.UserRegisterRequest;
 
 @Service
@@ -20,5 +21,5 @@ public interface AuthService
     
      void resetPassword(ResetPasswordRequest request);
 
-	 void sendForgotPasswordOtp(String email);
+     void sendForgotPasswordOtp(OtpRequest request);
 }

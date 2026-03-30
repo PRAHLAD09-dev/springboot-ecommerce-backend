@@ -1,102 +1,178 @@
 package com.prahlad.ecommerce.service.otp;
 
-import com.prahlad.ecommerce.exception.EmailException;
-import com.sendgrid.*;
-import com.sendgrid.helpers.mail.Mail;
-import com.sendgrid.helpers.mail.objects.Content;
-import com.sendgrid.helpers.mail.objects.Email;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class EmailService 
 {
 
-    @Value("${sendgrid.api.key}")
-    private String apiKey;
+	private final JavaMailSender mailSender;
 
-    @Value("${sendgrid.from.email}")
-    private String fromEmail;
-    
-    
+	public void sendOtp(String toEmail, String otp) 
+	{
+	    SimpleMailMessage message = new SimpleMailMessage();
+	    message.setFrom("Ecommerce Team <introvertprahlad@gmail.com>");
+	    message.setTo(toEmail);
+	    message.setSubject("OTP Verification");
 
-    public void sendOtp(String toEmail, String otp) 
-    {
+	    message.setText(
+	    		" Hi,\n " +
+	    				
+	    		 " Your verification code for Ecommerce App: "  + otp 
+	    		 + 
+	    		 "\nThis code will expire in 5 minutes."
+	    				                +
+	    	     "\nIf you did not request this, please ignore.\n"
+	    				                +
+	    	     "\nThanks,"
+	    				                +
+	    		 "\nTeam Ecommerce"
+	    );
 
-        Email from = new Email(fromEmail , "Prahlad Bhakat");
-        Email to = new Email(toEmail);
-        
+	    mailSender.send(message);
+	}
+	
+	public void sendSimpleMail(String toEmail, String subject, String body) 
+	{
 
-        Content content = new Content(
-                "text/plain",
-                " Hi,\n " +
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("Ecommerce Team <introvertprahlad@gmail.com>");
+        message.setTo(toEmail);
+        message.setSubject(subject);
+        message.setText(body);
 
-                " Your verification code for Ecommerce App: "  + otp + "\nThis code will expire in 5 minutes."
-                +
-                 "\nIf you did not request this, please ignore.\n"
-                +
-                 "\nThanks,"
-                +
-                 "\nTeam Ecommerce"
-        );
-
-        Mail mail = new Mail(from, "OTP Verification", to, content);
-
-        try 
-        {
-        	SendGrid sg = new SendGrid(apiKey);
-
-        	Request request = new Request();
-        	request.setMethod(Method.POST);
-        	request.setEndpoint("mail/send");
-        	request.setBody(mail.build());
-
-        	Response response = sg.api(request);      
-
-            if (response.getStatusCode() >= 400) 
-            {
-                throw new EmailException("Failed to send email");
-            }
-
-        } 
-        
-        catch (Exception e) 
-        {
-            throw new EmailException("Email sending failed");
-        }
+        mailSender.send(message);
     }
-    
-    public void sendSimpleMail(String toEmail, String subject, String body) 
-    {
-        
-        Email from = new Email(fromEmail, "Ecommerce App");
-        Email to = new Email(toEmail);
+	
+	public void sendHtmlMail(String toEmail, String subject, String htmlContent) 
+	{
+	    try {
+	        MimeMessage message = mailSender.createMimeMessage();
 
-        Content content = new Content("text/plain", body);
+	        MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
-        Mail mail = new Mail(from, subject, to, content);
+	        helper.setFrom("introvertprahlad@gmail.com", "Ecommerce Team");
+	        helper.setTo(toEmail);
+	        helper.setSubject(subject);
 
-        SendGrid sg = new SendGrid(apiKey);
+	        helper.setText(htmlContent, true);
 
-        Request request = new Request();
-        try 
-        {
-            request.setMethod(Method.POST);
-            request.setEndpoint("mail/send");
-            request.setBody(mail.build());
+	        mailSender.send(message);
 
-            Response response = sg.api(request);
-
-            if (response.getStatusCode() >= 400) 
-            {
-                throw new EmailException("Email sending failed");
-            }
-
-        } 
-        catch (Exception e) 
-        {
-            throw new EmailException("Error sending email: " + e.getMessage());
-        }
-    }
+	    } 
+	    catch (Exception e) 
+	    {
+	        throw new RuntimeException("HTML Email sending failed: " + e.getMessage());
+	    }
+	}
+	
+//    @Value("${sendgrid.api.key}")
+//    private String apiKey;
+//
+//    @Value("${sendgrid.from.email}")
+//    private String fromEmail;
+//    
+//    
+//    @Async
+//    public void sendOtp(String toEmail, String otp) 
+//    {
+//
+//        Email from = new Email(fromEmail , "Ecommerce");
+//        Email to = new Email(toEmail);
+//        
+//
+//        Content content = new Content(
+//                "text/plain",
+//                " Hi,\n " +
+//
+//                " Your verification code for Ecommerce App: "  + otp + "\nThis code will expire in 5 minutes."
+//                +
+//                 "\nIf you did not request this, please ignore.\n"
+//                +
+//                 "\nThanks,"
+//                +
+//                 "\nTeam Ecommerce"
+//        );
+//
+//        Mail mail = new Mail(from, "OTP Verification", to, content);
+//
+//        try 
+//        {
+//        	SendGrid sg = new SendGrid(apiKey);
+//
+//        	Request request = new Request();
+//        	request.setMethod(Method.POST);
+//        	request.setEndpoint("mail/send");
+//        	request.setBody(mail.build());
+//
+//        	  System.out.println("Before email");
+//        	  
+//        	  Response response = sg.api(request);
+//
+//        	  System.out.println("STATUS: " + response.getStatusCode());
+//        	  System.out.println("BODY: " + response.getBody());
+//        	  System.out.println("HEADERS: " + response.getHeaders());
+//        	  System.out.println("After email");
+//
+//            if (response.getStatusCode() >= 400) 
+//            {
+//                throw new EmailException("Failed to send email");
+//            }
+//
+//        } 
+//        
+//        catch (Exception e) 
+//        {
+//        	e.printStackTrace();
+//            throw new EmailException("Email sending failed");
+//        }
+//    }
+//    
+//    public void sendSimpleMail(String toEmail, String subject, String body) 
+//    {
+//        
+//        Email from = new Email(fromEmail, "Ecommerce App");
+//        Email to = new Email(toEmail);
+//
+//        Content content = new Content("text/plain", body);
+//
+//        Mail mail = new Mail(from, subject, to, content);
+//
+//        SendGrid sg = new SendGrid(apiKey);
+//
+//        Request request = new Request();
+//        try 
+//        {
+//            request.setMethod(Method.POST);
+//            request.setEndpoint("mail/send");
+//            request.setBody(mail.build());
+//
+//          
+//            
+//            Response response = sg.api(request);
+//            
+//          
+//
+//            if (response.getStatusCode() >= 400) 
+//            {
+//            	
+//                throw new EmailException("Email sending failed");
+//            }
+//
+//        } 
+//        catch (Exception e) 
+//        {
+//        	e.printStackTrace();
+//            throw new EmailException("Error sending email: " + e.getMessage());
+//        }
+//    }
 }
