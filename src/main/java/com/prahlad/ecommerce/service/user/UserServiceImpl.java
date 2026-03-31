@@ -68,11 +68,19 @@ public class UserServiceImpl implements UserService
     // DELETE ACCOUNT
     // =========================
     
-    @Override
-    public void requestDeleteAccount(String email) 
-    {
-        otpService.generateOtp(email, OTPType.DELETE_ACCOUNT);
-    }
+	@Override
+	public void requestDeleteAccount(String email) 
+	{
+
+		User user = getUserByEmail(email);
+
+		if (!user.isActive()) 
+		{
+			throw new BadRequestException("Account already deleted");
+		}
+
+		otpService.generateOtp(email, OTPType.DELETE_ACCOUNT);
+	}
     
     @Override
     @Transactional
@@ -80,8 +88,7 @@ public class UserServiceImpl implements UserService
     {
         otpService.verifyOtp(email, otp, OTPType.DELETE_ACCOUNT);
 
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = getUserByEmail(email);
 
         user.setActive(false);
 

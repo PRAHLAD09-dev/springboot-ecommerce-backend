@@ -3,6 +3,7 @@ package com.prahlad.ecommerce.security;
 
 import com.prahlad.ecommerce.entity.Merchant;
 import com.prahlad.ecommerce.entity.User;
+import com.prahlad.ecommerce.exception.ResourceNotFoundException;
 import com.prahlad.ecommerce.repository.MerchantRepository;
 import com.prahlad.ecommerce.repository.UserRepository;
 
@@ -55,6 +56,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter
         	if (user == null) {
         	    Merchant merchant = merchantRepository.findByEmail(email).orElse(null);
 
+        	    if(merchant == null)
+        	    {
+        	    	throw new ResourceNotFoundException("User Not Found");
+        	    }
         	    if (merchant != null && jwtUtil.isTokenValid(token)) 
         	    {
         	        UsernamePasswordAuthenticationToken authToken =

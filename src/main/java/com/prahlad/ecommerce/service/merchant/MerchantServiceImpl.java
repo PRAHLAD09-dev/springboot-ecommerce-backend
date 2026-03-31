@@ -27,13 +27,21 @@ public class MerchantServiceImpl implements MerchantService
     private final OtpService otpService;
     private final NotificationService notificationService;
     
+    
+	// =========================
+	// COMMON METHOD
+	// =========================
+    private Merchant getMerchantByEmail(String email) 
+    {
+        return  merchantRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Merchant not found"));
+    }
 
     @Override
     public MerchantResponse getProfile(String email) 
     {
 
-        Merchant merchant = merchantRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Merchant not found"));
+        Merchant merchant = getMerchantByEmail(email);
 
         return mapToDTO(merchant);
     }
@@ -42,8 +50,7 @@ public class MerchantServiceImpl implements MerchantService
     public MerchantResponse updateProfile(String email, MerchantUpdateRequest request) 
     {
 
-        Merchant merchant = merchantRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Merchant not found"));
+        Merchant merchant = getMerchantByEmail(email);
 
         if (request.businessName() != null) 
         {
@@ -59,8 +66,7 @@ public class MerchantServiceImpl implements MerchantService
     public String changePassword(String email, String oldPassword, String newPassword) 
     {
 
-        Merchant merchant = merchantRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Merchant not found"));
+        Merchant merchant = getMerchantByEmail(email);
 
         if (!passwordEncoder.matches(oldPassword, merchant.getPassword())) 
         {
@@ -77,6 +83,11 @@ public class MerchantServiceImpl implements MerchantService
     @Override
 	public void requestDeleteAccount(String email)
 	{
+    	Merchant merchant = getMerchantByEmail(email);
+    	if (!merchant.isActive()) 
+		{
+			throw new BadRequestException("Account already deleted");
+		}
 		otpService.generateOtp(email, OTPType.DELETE_ACCOUNT);
 	}
 
@@ -87,8 +98,7 @@ public class MerchantServiceImpl implements MerchantService
 
 		otpService.verifyOtp(email, otp, OTPType.DELETE_ACCOUNT);
 
-		Merchant merchant = merchantRepository.findByEmail(email)
-				.orElseThrow(() -> new ResourceNotFoundException("Merchant not found"));
+		Merchant merchant = getMerchantByEmail(email);
 
 		merchant.setActive(false);
 		merchant.setApproved(false);
