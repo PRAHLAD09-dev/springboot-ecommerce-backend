@@ -37,6 +37,9 @@ public class MerchantServiceImpl implements MerchantService
                 .orElseThrow(() -> new ResourceNotFoundException("Merchant not found"));
     }
 
+	// =========================
+	// GET PROFILE
+	// =========================
     @Override
     public MerchantResponse getProfile(String email) 
     {
@@ -46,6 +49,9 @@ public class MerchantServiceImpl implements MerchantService
         return mapToDTO(merchant);
     }
 
+    // =========================
+    // UPDATE PROFILE
+    // =========================
     @Override
     public MerchantResponse updateProfile(String email, MerchantUpdateRequest request) 
     {
@@ -62,6 +68,9 @@ public class MerchantServiceImpl implements MerchantService
         return mapToDTO(merchant);
     }
 
+	// =========================
+	// CHANGE PASSWORD (NO OTP)
+	// =========================
     @Override
     public String changePassword(String email, String oldPassword, String newPassword) 
     {
@@ -79,11 +88,16 @@ public class MerchantServiceImpl implements MerchantService
 
         return "Password changed successfully";
     }
-
+    
+    
+	// =========================
+	// DELETE ACCOUNT
+	// =========================
     @Override
 	public void requestDeleteAccount(String email)
 	{
     	Merchant merchant = getMerchantByEmail(email);
+    	
     	if (!merchant.isActive()) 
 		{
 			throw new BadRequestException("Account already deleted");
@@ -109,6 +123,10 @@ public class MerchantServiceImpl implements MerchantService
 				"Your merchant account has been deactivated successfully.", NotificationType.ACCOUNT_DELETED);
 	}
 
+    
+    // =========================
+    // DTO MAPPING
+    // =========================
     private MerchantResponse mapToDTO(Merchant merchant) 
     {
         return new MerchantResponse(
