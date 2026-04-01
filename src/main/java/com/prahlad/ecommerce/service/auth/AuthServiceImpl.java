@@ -226,12 +226,12 @@ public class AuthServiceImpl implements AuthService
 
             if (!user.isActive()) 
             {
-                throw new RuntimeException("Account is deleted");
+                throw new BadRequestException("Account is deleted");
             }
 
             if (!passwordEncoder.matches(request.password(), user.getPassword())) 
             {
-                throw new RuntimeException("Invalid credentials");
+                throw new ResourceNotFoundException("Invalid credentials");
             }
 
             String token = jwtUtil.generateToken(user);
@@ -252,12 +252,12 @@ public class AuthServiceImpl implements AuthService
 
             if (!merchant.isActive()) 
             {
-                throw new RuntimeException("Account is deleted");
+                throw new BadRequestException("Account is deleted");
             }
 
             if (!passwordEncoder.matches(request.password(), merchant.getPassword())) 
             {
-                throw new RuntimeException("Invalid credentials");
+                throw new ResourceNotFoundException("Invalid credentials");
             }
 
             if (!merchant.isApproved()) 
@@ -280,7 +280,7 @@ public class AuthServiceImpl implements AuthService
             );
         }
 
-        throw new RuntimeException("Invalid credentials");
+        throw new ResourceNotFoundException("Invalid credentials");
     }
     
 
